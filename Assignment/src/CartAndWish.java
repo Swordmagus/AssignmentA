@@ -50,7 +50,14 @@ class Cart extends CartAndWish {
         System.out.println("All products have been removed from the cart.");
     }
 
-    
+    public static Product findProductInCart(CartAndWish cartAndWish, String productName) {
+        for (Product product : cartAndWish.getProducts()) {
+            if (product.getName().equalsIgnoreCase(productName)) {
+                return product;
+            }
+        }
+        return null; // if the product is not found it's null
+    }
 }
 
 class Wishlist extends CartAndWish {

@@ -31,7 +31,17 @@ public abstract class User {
         cart.viewProducts();
     }
 
+    public CartAndWish getWishlist() {
+        return wishlist;
+    }
+
+    public CartAndWish getCart() {
+        return cart;
+    }
+
     public abstract boolean canCheckout();
+
+
 }
 
 class Guest extends User {
