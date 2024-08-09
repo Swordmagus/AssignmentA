@@ -22,6 +22,12 @@ public abstract class CartAndWish {
         products.remove(product);
     }
 
+    public void removeProduct(Product product, boolean shouldPrint) {
+        if (shouldPrint) {
+            System.out.println("Removing product: " + product);
+        }
+        removeProduct(product); 
+    }
 }
 
 class Cart extends CartAndWish {
@@ -33,9 +39,13 @@ class Cart extends CartAndWish {
 
     @Override
     public void removeProduct(Product product) {
-        System.out.println("Removing product from cart: " + product);
         super.removeProduct(product);
     }
+    @Override
+    public void removeProduct(Product product, boolean shouldPrint) {
+        super.removeProduct(product, shouldPrint);
+    }
+
 
     public static void removeAllProductsFromCart(User currentUser) {
         List<Product> productsInCart = currentUser.getCart().getProducts();
@@ -56,7 +66,7 @@ class Cart extends CartAndWish {
                 return product;
             }
         }
-        return null; // if the product is not found it's null
+        return null; 
     }
 }
 
@@ -72,6 +82,7 @@ class Wishlist extends CartAndWish {
         System.out.println("Removing product from wishlist: " + product);
         super.removeProduct(product);
     }
+
 
     protected static void addAllWishlistToCart(User currentUser) {
         List<Product> wishlist = currentUser.getWishlist().getProducts(); // get wishlist

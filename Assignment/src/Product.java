@@ -12,7 +12,7 @@ public class Product {
     private double price;
     private ProductCategory category;
     private int inventory;
-    private static List<Product> products = new ArrayList<>();
+    private static final List<Product> products = new ArrayList<>();
 
     public Product(String name, double price, ProductCategory category, int inventory) {
         this.name = name;
@@ -33,7 +33,7 @@ public class Product {
         return category;
     }
 
-    public int getinventory() {
+    public int getInventory() {
         return inventory;
     }
 
@@ -97,24 +97,29 @@ public class Product {
         products.add(new Product("Board Game", 30.0, ProductCategory.TOYS, 15));
     }
 
-    protected static void viewAllProducts() {
+
+    public static void viewAllProducts(Scanner scanner) {
         System.out.println("\nAll Products:");
         for (Product product : products) {
             System.out.println(product);
         }
+        collectionSort(scanner, products);
     }
 
-    protected static void searchProducts(Scanner scanner) {
+    public static void searchProducts(Scanner scanner) {
         System.out.print("Enter product name to search: ");
         String searchName = scanner.nextLine().toUpperCase();
-
+        List<Product> tempProductList = new ArrayList<>();
         System.out.println("\nSearch Results:");
         for (Product product : products) {
             if (product.getName().toUpperCase().contains(searchName)) {
                 System.out.println(product);
+                tempProductList.add(product);
             }
         }
+        collectionSort(scanner, tempProductList);
     }
+    
 
     public static void viewProductsByCategory(ProductCategory selectedCategory) {
         for (Product product : products) {
@@ -124,47 +129,56 @@ public class Product {
         }
     }
 
-    protected static void sortProducts(ProductCategory selectedCategory, Scanner scanner) {
-        System.out.println(
-                "Sort by: \n1. Price (Low to High)\n2. Price (High to Low)\n3. Name (A-Z)\n4. Name (Z-A)\n5. Exit");
-        String choice = scanner.nextLine();
-
-        List<Product> tempProductList = new ArrayList<>(); // Temporary Product list to sort
+    private static void sortProductsCategory(ProductCategory selectedCategory, Scanner scanner) {
+        List<Product> tempProductList = new ArrayList<>();
         for (Product product : products) {
             if (product.getCategory() == selectedCategory) {
                 tempProductList.add(product);
             }
         }
+        collectionSort(scanner, tempProductList);
+    }
+
+    private static void collectionSort(Scanner scanner, List<Product> productList) {
+        System.out.println(
+                "Sort by: | 1. Price (Low to High) | 2. Price (High to Low) | 3. Name (A-Z) | 4. Name (Z-A) | 5. Exit");
+        String choice = scanner.nextLine();
+    
         switch (choice) {
             case "1":
-                tempProductList.sort(Comparator.comparingDouble(Product::getPrice).thenComparing(Product::getName));
+                productList.sort(Comparator.comparingDouble(Product::getPrice)
+                        .thenComparing(Product::getName));
                 break;
             case "2":
-                tempProductList.sort(
-                        (Comparator.comparingDouble(Product::getPrice).thenComparing(Product::getName)).reversed());
+                productList.sort(Comparator.comparingDouble(Product::getPrice).reversed()
+                        .thenComparing(Product::getName));
                 break;
             case "3":
-                tempProductList.sort(Comparator.comparing(Product::getName).thenComparingDouble(Product::getPrice));
+                productList.sort(Comparator.comparing(Product::getName)
+                        .thenComparingDouble(Product::getPrice));
                 break;
             case "4":
-                tempProductList.sort(
-                        (Comparator.comparing(Product::getName).thenComparingDouble(Product::getPrice)).reversed());
+                productList.sort(Comparator.comparing(Product::getName).reversed()
+                        .thenComparingDouble(Product::getPrice));
                 break;
             case "5":
-                return;
+                return; // Exit the sorting operation
             default:
                 System.out.println("Invalid choice.");
-                break;
+                return;
         }
-
-        // Display the sorted products
+    
         System.out.println("Sorted Products:");
-        for (Product product : tempProductList) {
+        for (Product product : productList) {
             System.out.println(product);
         }
     }
 
-    protected static Product findProductByName(String productName) {
+
+    public static Product findProductByName(String productName) {
+        if (productName == null || productName.isEmpty()) {
+            return null;
+        }
         for (Product product : products) {
             if (product.getName().equalsIgnoreCase(productName)) {
                 return product;
@@ -177,28 +191,24 @@ public class Product {
         return products;
     }
 
-    // Adds Items to either the wishlist or the cart depending on "choice"
-    protected static void appendWishCartlist(Scanner scanner, User currentUser, String choice, boolean usercheck) {
+    public static void appendWishCartList(Scanner scanner, User currentUser, String choice, boolean usercheck) {
         if (usercheck) {
             System.out.print("Enter the product name to add: ");
             String productName = scanner.nextLine();
             Product productToAdd = findProductByName(productName);
             if (productToAdd != null) {
-                if (choice.equals("4") && productToAdd.getinventory() > 0) {
+                if (choice.equals("4") && productToAdd.getInventory() > 0) {
                     currentUser.addToCart(productToAdd);
                     System.out.println(productToAdd.getName() + " added to Cart.");
 
                     if (currentUser.getWishlist().getProducts().contains(productToAdd)) {
-                        // Attempt to remove the product from the wishlist
                         currentUser.getWishlist().removeProduct(productToAdd);
                     }
-                    return;
-                } else if (choice.equals("4") && productToAdd.getinventory() == 0) {
+                } else if (choice.equals("4") && productToAdd.getInventory() == 0) {
                     System.out.println("Product is out of stock.");
                 } else {
                     currentUser.addToWishlist(productToAdd);
                     System.out.println(productToAdd.getName() + " added to Wishlist.");
-                    return;
                 }
             } else {
                 System.out.println("Product not found.");
@@ -208,12 +218,29 @@ public class Product {
         }
     }
 
-    protected static void viewCategoryMenu(Scanner scanner) {
+    public static void addProductWishToCart(Scanner scanner, User currentUser, boolean usercheck) {
+        if (usercheck) {
+            System.out.print("Enter the product name to add: ");
+            String productName = scanner.nextLine();
+            Product productToAdd = findProductByName(productName);
+            if (productToAdd != null && productToAdd.getInventory() > 0
+                    && currentUser.getWishlist().getProducts().contains(productToAdd)) {
+                currentUser.addToCart(productToAdd);
+                currentUser.getWishlist().removeProduct(productToAdd);
+            } else {
+                System.out.println("Product not found or out of stock.");
+            }
+        } else {
+            System.out.println("Only customers and members can add products.");
+        }
+    }
+
+    public static void viewCategoryMenu(Scanner scanner) {
         System.out.println("\nCategories:");
-        int i = 0;
+        int i = 1;
         for (ProductCategory category : ProductCategory.values()) {
-            i += 1;
             System.out.println(i + ". " + category);
+            i++;
         }
         System.out.print("Enter category Name: ");
         String categoryInput = scanner.nextLine().toUpperCase();
@@ -227,8 +254,6 @@ public class Product {
         }
 
         viewProductsByCategory(selectedCategory);
-
-        // Sorting products in the selected category
-        Product.sortProducts(selectedCategory, scanner);
+        sortProductsCategory(selectedCategory, scanner);
     }
 }

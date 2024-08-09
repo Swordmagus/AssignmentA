@@ -8,21 +8,25 @@ public class OnlineShoppingSystem {
         Product.initializeProducts(); // Initialize products
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter your name: ");
-        String name = scanner.nextLine();
+        try {
+            System.out.print("Enter your name: ");
+            String name = scanner.nextLine();
 
-        while (true) {
-            System.out.print("\nLogin in to Account:\nPlease Enter 'yes' or 'no': ");
-            String Discition = scanner.nextLine();
-            loginMenu(Discition, scanner, name);
+            while (true) {
+                System.out.print("\nLogin to Account:\nPlease Enter 'yes' or 'no': ");
+                String decision = scanner.nextLine();
+                loginMenu(decision, scanner, name);
 
+            }
+        } finally {
+            scanner.close(); // Ensure the Scanner is closed to prevent resource leaks
         }
     }
 
-    private static void loginMenu(String Discition, Scanner scanner, String name) {
-        if (Discition.equalsIgnoreCase("yes")) {
+    private static void loginMenu(String decision, Scanner scanner, String name) {
+        if (decision.equalsIgnoreCase("yes")) {
             while (true) {
-                System.out.print("\nEnter a 4-digit code to become a Customer or a 5-digit code to become a Member:");
+                System.out.print("\nEnter a 4-digit code to become a Customer or a 5-digit code to become a Member: ");
                 String code = scanner.nextLine();
 
                 if (code.matches("\\d{4}")) {
@@ -39,7 +43,7 @@ public class OnlineShoppingSystem {
                     System.out.println("Invalid code. Please enter a 4-digit or 5-digit code.");
                 }
             }
-        } else if (Discition.equalsIgnoreCase("no")) {
+        } else if (decision.equalsIgnoreCase("no")) {
             currentUser = new Guest(name);
             usercheck = false;
             System.out.println("\nWelcome to the Online Shopping System!");
@@ -53,7 +57,7 @@ public class OnlineShoppingSystem {
     private static void mainMenu(Scanner scanner) {
         while (true) {
             System.out.println("\nMain Menu:");
-            System.out.print("1. View Products | 2. View Cart | 3. View User | 4. Exit\nEnter Button Number: ");
+            System.out.print("1. View Products | 2. View Cart | 3. View User | 4. Exit Website\nEnter Button Number: ");
             String choice = scanner.nextLine();
 
             switch (choice) {
@@ -68,7 +72,7 @@ public class OnlineShoppingSystem {
                     break;
                 case "4":
                     System.out.println("Exiting...");
-                    return;
+                    System.exit(0);
                 default:
                     System.out.println("Invalid choice.");
             }
@@ -84,7 +88,7 @@ public class OnlineShoppingSystem {
 
             switch (choice) {
                 case "1":
-                    Product.viewAllProducts();
+                    Product.viewAllProducts(scanner);
                     break;
                 case "2":
                     Product.searchProducts(scanner);
@@ -93,12 +97,10 @@ public class OnlineShoppingSystem {
                     Product.viewCategoryMenu(scanner);
                     break;
                 case "4":
-                    Product.appendWishCartlist(scanner, currentUser, choice, usercheck);
-                    // Add product to cart if user is a customer or a member
+                    Product.appendWishCartList(scanner, currentUser, choice, usercheck);
                     break;
                 case "5":
-                    Product.appendWishCartlist(scanner, currentUser, choice, usercheck);
-                    // Add product to wishlist if the user is a customer or a member
+                    Product.appendWishCartList(scanner, currentUser, choice, usercheck);
                     break;
                 case "6":
                     return;
@@ -116,12 +118,11 @@ public class OnlineShoppingSystem {
             System.out.println("1. Log in");
         } else {
             System.out.println("1. Log Out");
-
         }
         System.out.print(
-                "2. Add wishlist Product to Cart - If you want to add all wishlist products to Cart Enter 'ALL'\n3. Remove Wish | 4. Exit\nEnter: ");
+                "2. Add wishlist Product to Cart | If you want to add all wishlist products to Cart Enter 'ALL'\n3. Remove Wish | 4. Exit\nEnter: ");
 
-        String choice1 = scanner.nextLine();
+        String choice1 = scanner.nextLine().toLowerCase();
 
         switch (choice1) {
             case "1":
@@ -132,25 +133,23 @@ public class OnlineShoppingSystem {
                     usercheck = false;
                     loginMenu("no", scanner, currentUser.getName());
                 }
+                break; // Added missing break
             case "2":
-                Product.appendWishCartlist(scanner, currentUser, "4", usercheck);// append selected wishlist product to
-                                                                                 // cart
+                Product.addProductWishToCart(scanner, currentUser, usercheck);
                 break;
-            case "ALL":
-                if (!usercheck) {
+            case "all":
+                if (usercheck) {
                     Wishlist.addAllWishlistToCart(currentUser);
-                } // Add all wishlist products to cart
-                else {
+                } else {
                     System.out.println("You are not a Customer");
                 }
                 break;
             case "3":
                 System.out.print("Enter the name of the product to remove from the wishlist: ");
-                String productName = scanner.nextLine(); // Get the product name
-                Product product = Cart.findProductInCart(currentUser.getWishlist(), productName); // Find the product
-                // in the wishlist
+                String productName = scanner.nextLine();
+                Product product = Cart.findProductInCart(currentUser.getWishlist(), productName);
                 if (product != null) {
-                    currentUser.getWishlist().removeProduct(product); // Remove the product from the wishlist
+                    currentUser.getWishlist().removeProduct(product);
                     System.out.println("Product removed from wishlist.");
                 } else {
                     System.out.println("Product not found in the wishlist.");
@@ -166,13 +165,16 @@ public class OnlineShoppingSystem {
 
     private static void ViewCart(Scanner scanner) {
         currentUser.viewCart();
-        System.out.print("1. Checkout | 2. Remove Product | 3. Clear Cart | 4. Back\nEnter: ");
+        System.out.print("1. Checkout | 2. Remove Product | 3. Clear Cart | 4. Back\nEnter Button No: ");
         String choice2 = scanner.nextLine();
 
         switch (choice2) {
-
             case "1":
                 if (currentUser.canCheckout()) {
+                    if (currentUser.getCart().getProducts().isEmpty()) {
+                        System.out.println("No products in cart to checkout.");
+                        break;
+                    }
                     System.out.println("Proceeding to checkout...");
                     checkoutMenu(currentUser, scanner);
                 } else {
@@ -183,21 +185,21 @@ public class OnlineShoppingSystem {
                 if (!usercheck) {
                     System.out.println("You are not a Customer");
                     break;
-                }
-                System.out.print("Enter the product name: ");
-                String productName = scanner.nextLine(); // Get the product name
-                Product productToRemove = Cart.findProductInCart(currentUser.getCart(), productName);
-                if (productToRemove != null) {
-                    currentUser.getCart().removeProduct(productToRemove);
-                    System.out.println("Product removed.");
                 } else {
-                    System.out.println("Product not found.");
+                    System.out.print("Enter the product name: ");
+                    String productName = scanner.nextLine();
+                    Product productToRemove = Cart.findProductInCart(currentUser.getCart(), productName);
+                    if (productToRemove != null && currentUser.getCart().getProducts().contains(productToRemove)) {
+                        currentUser.getCart().removeProduct(productToRemove);
+                        System.out.println("Product removed.");
+                    } else {
+                        System.out.println("Product not found.");
+                    }
                 }
                 break;
             case "3":
                 if (usercheck) {
                     Cart.removeAllProductsFromCart(currentUser);
-                    break;
                 } else {
                     System.out.println("Guests cannot clear cart.");
                 }
@@ -234,7 +236,6 @@ public class OnlineShoppingSystem {
         boolean success = payment.checkout(user);
         if (success) {
             System.out.println("Order placed successfully!");
-            return;
         } else {
             System.out.println("Order placement failed. Please try again.");
         }

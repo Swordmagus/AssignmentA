@@ -1,7 +1,10 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public interface Payment {
     boolean checkout(User currentUser);
+
 }
 
 class CashOnDelivery implements Payment {
@@ -17,22 +20,36 @@ class CashOnDelivery implements Payment {
         System.out.println("Cash on delivery order placed successfully to: " + address);
 
         reduceInventory(currentUser);
-        scanner.close();
         return true;
     }
 
     private double calculateTotalPrice(User currentUser) {
         double totalPrice = 0.0;
-        for (Product product : currentUser.getCart().getProducts()) {
-            totalPrice += product.getPrice();
+        if (currentUser instanceof Member) {
+            double discount = ((Member) currentUser).getDiscount();
+            for (Product product : currentUser.getCart().getProducts()) {
+                totalPrice += product.getPrice() * (1 - discount / 100);
+            }
+            System.out.println("Discount " + discount + "%");
+
+        } else {
+            for (Product product : currentUser.getCart().getProducts()) {
+                totalPrice += product.getPrice();
+            }
         }
         return totalPrice;
     }
 
-    private void reduceInventory(User currentUser) {
-        for (Product product : currentUser.getCart().getProducts()) {
 
-            product.setInventory(product.getinventory() - 1);
+    private void reduceInventory(User currentUser) {
+        List<Product> productsToRemove = new ArrayList<>();
+
+        for (Product product : currentUser.getCart().getProducts()) {
+            product.setInventory(product.getInventory() - 1);
+            productsToRemove.add(product);
+        }
+
+        for (Product product : productsToRemove) {
             currentUser.getCart().removeProduct(product);
         }
     }
@@ -47,37 +64,54 @@ class OnlinePayment implements Payment {
         String address = scanner.nextLine();
 
         System.out.print("\nEnter Card Type (Credit/Debit): ");
-        String cardType = scanner.nextLine();
+        String cardType = scanner.nextLine().toLowerCase();
         while (true) {
-            if (cardType.equalsIgnoreCase("credit") || cardType.equalsIgnoreCase("debit")) {
+            if (cardType.equals("credit") || cardType.equals("debit")) {
                 break;
             } else {
-                System.out.print("\nInvalid card type. Please enter 'Credit' or 'Debit'.");
-                checkout(currentUser);
+                System.out.print("\nInvalid card type. Please enter 'Credit' or 'Debit': ");
+                cardType = scanner.nextLine().toLowerCase(); // Update the cardType here
             }
         }
-        
-        int cardNumber = 0;
-        boolean validInput = false;
-        while (!validInput) {
-            System.out.print("\nEnter Card Number: ");
-            if (scanner.hasNextInt()) {
-                cardNumber = scanner.nextInt();
-                validInput = true;
-            } else {
-                System.out.print("\nInvalid input. Please enter a valid 16-digit card number.: ");
+
+        String cardNumberStr = "";
+        while (true) {
+            System.out.print("Enter your card number (10 Digits): ");
+            String input = scanner.nextLine();
+            try {
+                int cardNumber = Integer.parseInt(input);
+                cardNumberStr = Integer.toString(cardNumber);
+                if (cardNumberStr.length() == 10) {
+                    break;
+                } else {
+                    System.out.println("Card number must be 10 digits long.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid card number.");
             }
         }
 
         System.out.print("Enter Expiration Date (MM/YY): ");
         String expirationDate = scanner.nextLine();
 
-        System.out.print("Enter CCV: ");
-        String ccv = scanner.nextLine();
+        String ccv = "";
+        while (true) {
+            System.out.print("Enter CCV (3 Digits): ");
+            String input = scanner.nextLine();
+            try {
+                int ccvNumber = Integer.parseInt(input);
+                ccv = Integer.toString(ccvNumber);
+                if (ccv.length() == 3) {
+                    break;
+                } else {
+                    System.out.println("CCV must be 3 digits long.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid CCV.");
+            }
+        }
 
-        scanner.close();
-
-        if (validateCardDetails(cardNumber, expirationDate, ccv)) {
+        if (validateCardDetails(cardNumberStr, expirationDate, ccv)) {
             double totalPrice = calculateTotalPrice(currentUser);
             System.out.println("Total Price: $" + totalPrice);
             System.out.println(cardType + " card payment successful.");
@@ -91,9 +125,8 @@ class OnlinePayment implements Payment {
         }
     }
 
-    private boolean validateCardDetails(int cardNumber, String expirationDate, String ccv) {
-        String cardNumberStr = String.valueOf(cardNumber);
-        return cardNumberStr.length() == 16 && expirationDate.matches("\\d{2}/\\d{2}") && ccv.length() == 3;
+    private boolean validateCardDetails(String cardNumberStr, String expirationDate, String ccv) {
+        return cardNumberStr.length() == 10 && expirationDate.matches("\\d{2}/\\d{2}") && ccv.length() == 3;
     }
 
     private double calculateTotalPrice(User currentUser) {
@@ -103,6 +136,8 @@ class OnlinePayment implements Payment {
             for (Product product : currentUser.getCart().getProducts()) {
                 totalPrice += product.getPrice() * (1 - discount / 100);
             }
+            System.out.println(" Discount " + discount + "%");
+
         } else {
             for (Product product : currentUser.getCart().getProducts()) {
                 totalPrice += product.getPrice();
@@ -112,10 +147,15 @@ class OnlinePayment implements Payment {
     }
 
     private void reduceInventory(User currentUser) {
-        for (Product product : currentUser.getCart().getProducts()) {
+        List<Product> productsToRemove = new ArrayList<>();
 
-            product.setInventory(product.getinventory() - 1);
-            currentUser.getCart().removeProduct(product);
+        for (Product product : currentUser.getCart().getProducts()) {
+            product.setInventory(product.getInventory() - 1);
+            productsToRemove.add(product);
+        }
+
+        for (Product product : productsToRemove) {
+            currentUser.getCart().removeProduct(product, false);
         }
     }
 }
